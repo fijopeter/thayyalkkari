@@ -1,0 +1,16 @@
+{
+  "name": "thayyalkkari-uploads-worker",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260701.1",
+    "typescript": "~5.7.0",
+    "wrangler": "^4.107.0"
+  }
+}

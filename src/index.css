@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans Malayalam", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Noto Serif Malayalam", "Playfair Display", ui-serif, serif;
+
+  --color-cream-50: #fdfbf7;
+  --color-cream-100: #f9f3ea;
+  --color-cream-200: #f1e6d3;
+
+  --color-maroon-50: #fbf1f1;
+  --color-maroon-100: #f3dcdd;
+  --color-maroon-200: #e3b7bd;
+  --color-maroon-400: #b3475a;
+  --color-maroon-500: #8f2f42;
+  --color-maroon-600: #732536;
+  --color-maroon-700: #591c29;
+  --color-maroon-900: #380f17;
+
+  --color-gold-100: #f8ecd1;
+  --color-gold-200: #edd8a3;
+  --color-gold-400: #cd9f3f;
+  --color-gold-500: #b3862c;
+  --color-gold-600: #8f6a20;
+
+  --color-ink-700: #2b2320;
+  --color-ink-900: #1a1512;
+
+  --shadow-soft: 0 2px 8px -2px rgb(43 35 32 / 0.08), 0 8px 24px -8px rgb(43 35 32 / 0.10);
+  --shadow-soft-lg: 0 4px 16px -4px rgb(43 35 32 / 0.10), 0 16px 40px -12px rgb(43 35 32 / 0.14);
+
+  --animate-fade-up: fade-up 0.5s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream-50 text-ink-900 font-sans antialiased;
+    margin: 0;
+  }
+
+  ::selection {
+    @apply bg-maroon-200 text-maroon-900;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-soft-lg {
+    box-shadow: var(--shadow-soft-lg);
+  }
+}

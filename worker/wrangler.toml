@@ -1,0 +1,20 @@
+name = "thayyalkkari-uploads"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+
+# Bucket name must match a bucket you've created in the Cloudflare dashboard
+# (R2 > Create bucket). See README "Image uploads (Cloudflare R2)".
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "thayyalkkari-images"
+
+[vars]
+# The public base URL for reading uploaded files back out of the bucket.
+# Use the bucket's r2.dev public URL (R2 > your bucket > Settings > Public
+# access > enable, then copy the "Public R2.dev Bucket URL") or a custom
+# domain you've connected to the bucket.
+PUBLIC_BASE_URL = "https://REPLACE-ME.r2.dev"
+
+# UPLOAD_TOKEN is a secret, not a var — set it with:
+#   wrangler secret put UPLOAD_TOKEN
+# Do not put it here; wrangler.toml is meant to be committed to source control.
