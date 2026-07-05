@@ -62,7 +62,32 @@ checks before accepting a request.
 
 Until this is configured, the "Upload Photo" buttons show an error and the
 plain URL text field underneath still works as a fallback (paste a link to
-an already-hosted image).
+an already-hosted image). The superadmin dashboard's "Image Storage" widget
+also depends on this — it calls the same Worker's `GET /usage` endpoint,
+which lists every object in the bucket and sums their size, so it'll show a
+"not configured" message until steps 5–8 are done.
+
+## Deleting images
+
+Images clean themselves up automatically in the common cases:
+- Uploading a new photo over an existing one (banner, logo, product photo)
+  deletes the old file it's replacing.
+- Deleting a product deletes its photo; deleting a shop deletes its
+  banner/logo and every one of its products' photos.
+
+There's also a manual **Remove** button next to every "Upload Photo" button
+(`ImageUploadField`) for clearing an image without replacing it. All of this
+goes through the Worker's `DELETE` endpoint (same auth token as uploads),
+which only ever deletes URLs that actually start with your bucket's
+`PUBLIC_BASE_URL` — pasting an external image URL and clicking Remove just
+clears the field locally without touching R2, since there's nothing of yours
+to delete.
+
+If you deployed the Worker before this endpoint existed, redeploy
+(`npx wrangler deploy`) to pick it up — delete/cleanup calls silently no-op
+against an older Worker version (they're best-effort and never block the
+surrounding action), so nothing breaks, but storage won't actually be
+reclaimed until you redeploy.
 
 ## Limits and behavior worth knowing
 
@@ -70,6 +95,14 @@ an already-hosted image).
   before upload (`src/lib/imageUpload.ts`) — a phone photo shrinks from a few
   MB to a few hundred KB, which stretches R2's 10GB free tier a long way.
 - The Worker hard-caps uploads at 8MB and only accepts JPEG/PNG/WebP/GIF.
+- **Once the bucket reaches the 10GB free-tier limit, new uploads are
+  refused** — the Worker checks total bucket usage before every write and
+  returns a clear error instead of writing past the limit. This is enforced
+  in the Worker itself (`R2_FREE_TIER_BYTES` in `worker/src/index.ts`), so it
+  can't be bypassed from the client; the admin forms also show a warning and
+  disable the upload button proactively once they know the limit's been hit.
+  If you upgrade past the free tier, update that constant and redeploy
+  (`npx wrangler deploy`).
 - The `UPLOAD_TOKEN` check is a shared secret — good enough to stop random
   internet traffic from hitting your Worker, not per-user authentication (all
   shop admins share the same upload path). Rotate it if it ever leaks:

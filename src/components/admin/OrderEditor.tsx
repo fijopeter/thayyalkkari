@@ -11,6 +11,7 @@ import {
   updateOrderStatus,
   useOrdersForShop,
 } from "@/store/ordersStore";
+import { useDbCapacity } from "@/hooks/useDbCapacity";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -30,6 +31,7 @@ const emptyForm = {
 export function OrderEditor({ shop }: { shop: Shop }) {
   const { t } = useTranslation();
   const { lang } = useLang();
+  const { atLimit: dbAtLimit } = useDbCapacity();
   const orders = useOrdersForShop(shop.id);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -197,9 +199,10 @@ export function OrderEditor({ shop }: { shop: Shop }) {
                 ))}
               </select>
             </div>
+            {dbAtLimit && <p className="text-sm text-red-600">{t("admin.dbLimitReached")}</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving || dbAtLimit}>
                 {saving ? t("admin.saving") : t("admin.save")}
               </Button>
               <Button type="button" variant="ghost" onClick={cancel} className="gap-1.5">
@@ -210,10 +213,19 @@ export function OrderEditor({ shop }: { shop: Shop }) {
           </form>
         </Card>
       ) : (
-        <Button type="button" variant="outline" className="gap-1.5" onClick={startAdd}>
-          <Plus className="h-4 w-4" />
-          {t("admin.addOrder")}
-        </Button>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5"
+            disabled={dbAtLimit}
+            onClick={startAdd}
+          >
+            <Plus className="h-4 w-4" />
+            {t("admin.addOrder")}
+          </Button>
+          {dbAtLimit && <p className="mt-2 text-sm text-red-600">{t("admin.dbLimitReached")}</p>}
+        </div>
       )}
     </div>
   );

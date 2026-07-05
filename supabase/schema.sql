@@ -41,7 +41,8 @@ create table profiles (
 -- ----------------------------------------------------------------------------
 create table shops (
   id uuid primary key default uuid_generate_v4(),
-  owner_id uuid not null default auth.uid() references profiles(id) on delete cascade,
+  -- unique: one shop per person, enforced here (not just by the app's UI flow)
+  owner_id uuid not null unique default auth.uid() references profiles(id) on delete cascade,
   slug text unique not null,
   name text not null,
   malayalam_name text,
@@ -179,12 +180,19 @@ $$;
 -- point for the whole approval workflow — without it, an admin could just
 -- set their own shop's status to 'approved' directly.
 -- ----------------------------------------------------------------------------
+-- `current_user <> 'postgres'` mirrors the same escape hatch on
+-- enforce_profile_guard() below: it lets you flip a shop's status directly
+-- from the SQL Editor (which connects as `postgres`) if you ever need to,
+-- without weakening anything for real app traffic (which never runs as
+-- `postgres`).
 create or replace function enforce_shop_status_guard()
 returns trigger
 language plpgsql
 as $$
 begin
-  if new.status is distinct from old.status and not is_superadmin() then
+  if new.status is distinct from old.status
+     and not is_superadmin()
+     and current_user <> 'postgres' then
     new.status := old.status;
   end if;
   return new;
@@ -195,13 +203,20 @@ create trigger shops_status_guard
   before update on shops
   for each row execute function enforce_shop_status_guard();
 
+-- `current_user <> 'postgres'` is a bootstrap escape hatch: it lets the
+-- project owner promote the very first superadmin directly from the SQL
+-- Editor (which connects as `postgres`), where is_superadmin() can't yet be
+-- true for anyone. Real app traffic goes through PostgREST as `anon` /
+-- `authenticated`, never `postgres`, so this doesn't weaken anything
+-- client-facing — see docs/SUPABASE_SETUP.md step 5.
 create or replace function enforce_profile_guard()
 returns trigger
 language plpgsql
 as $$
 begin
   if (new.role is distinct from old.role or new.status is distinct from old.status)
-     and not is_superadmin() then
+     and not is_superadmin()
+     and current_user <> 'postgres' then
     new.role := old.role;
     new.status := old.status;
   end if;
@@ -232,6 +247,46 @@ end;
 $$;
 
 grant execute on function get_database_size() to authenticated;
+
+-- ----------------------------------------------------------------------------
+-- enforce_db_size_limit() — hard lock on growing the database further once
+-- the free tier is full. Applied as a BEFORE INSERT trigger on the tables
+-- that actually grow with usage (shops/services/products/tracking_orders) —
+-- NOT on profiles, so signups/registration still work even when content
+-- storage is full; only *creating new content* is blocked. Existing rows can
+-- still be edited or deleted (to free up space) since this only guards
+-- INSERT, not UPDATE/DELETE.
+--
+-- 524288000 bytes = 500MB, Supabase's free-tier Postgres limit — keep this
+-- in sync with DB_FREE_TIER_BYTES in src/lib/storageLimits.ts.
+-- ----------------------------------------------------------------------------
+create or replace function enforce_db_size_limit()
+returns trigger
+language plpgsql
+as $$
+begin
+  if pg_database_size(current_database()) >= 524288000 then
+    raise exception 'Database storage limit reached (free tier). Delete some data, or upgrade your Supabase plan, before adding more.';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger shops_db_size_guard
+  before insert on shops
+  for each row execute function enforce_db_size_limit();
+
+create trigger services_db_size_guard
+  before insert on services
+  for each row execute function enforce_db_size_limit();
+
+create trigger products_db_size_guard
+  before insert on products
+  for each row execute function enforce_db_size_limit();
+
+create trigger tracking_orders_db_size_guard
+  before insert on tracking_orders
+  for each row execute function enforce_db_size_limit();
 
 -- ----------------------------------------------------------------------------
 -- lookup_tracking_code() — the ONLY way the public /track page reads orders.

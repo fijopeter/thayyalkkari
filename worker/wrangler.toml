@@ -13,7 +13,7 @@ bucket_name = "thayyalkkari-images"
 # Use the bucket's r2.dev public URL (R2 > your bucket > Settings > Public
 # access > enable, then copy the "Public R2.dev Bucket URL") or a custom
 # domain you've connected to the bucket.
-PUBLIC_BASE_URL = "https://REPLACE-ME.r2.dev"
+PUBLIC_BASE_URL = "https://pub-8cf05f657da6402abf2b19612185d908.r2.dev"
 
 # UPLOAD_TOKEN is a secret, not a var — set it with:
 #   wrangler secret put UPLOAD_TOKEN

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
-import { Menu, X, Scissors, PackageSearch, LayoutDashboard, LogIn } from "lucide-react";
+import { Menu, X, Scissors, PackageSearch, LayoutDashboard } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
@@ -18,7 +18,7 @@ export function Header() {
   const { scrollY } = useScroll();
   const { session, profile } = useSession();
   const shops = useShops();
-  const dashboardPath = session ? dashboardPathForProfile(profile, shops) : "/login";
+  const dashboardPath = session ? dashboardPathForProfile(profile, shops) : null;
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 12);
@@ -91,12 +91,14 @@ export function Header() {
               {t("nav.track")}
             </Button>
           </Link>
-          <Link to={dashboardPath}>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              {session ? <LayoutDashboard className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
-              {session ? t("nav.dashboard") : t("nav.login")}
-            </Button>
-          </Link>
+          {dashboardPath && (
+            <Link to={dashboardPath}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <LayoutDashboard className="h-4 w-4" />
+                {t("nav.dashboard")}
+              </Button>
+            </Link>
+          )}
         </div>
 
         <button
@@ -131,21 +133,23 @@ export function Header() {
                 {item.label}
               </NavLink>
             ))}
-            <NavLink
-              to={dashboardPath}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-2 rounded-xl px-4 py-3 text-base font-medium transition-colors",
-                  isActive
-                    ? "bg-maroon-100 text-maroon-700"
-                    : "text-ink-700 hover:bg-maroon-50",
-                )
-              }
-            >
-              {session ? <LayoutDashboard className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
-              {session ? t("nav.dashboard") : t("nav.login")}
-            </NavLink>
+            {dashboardPath && (
+              <NavLink
+                to={dashboardPath}
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-2 rounded-xl px-4 py-3 text-base font-medium transition-colors",
+                    isActive
+                      ? "bg-maroon-100 text-maroon-700"
+                      : "text-ink-700 hover:bg-maroon-50",
+                  )
+                }
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                {t("nav.dashboard")}
+              </NavLink>
+            )}
             <div className="mt-2 px-2">
               <LanguageSwitcher className="w-full justify-center" />
             </div>

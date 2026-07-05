@@ -12,8 +12,7 @@
     "trackShort": "Track",
     "about": "About",
     "contact": "Contact / Help",
-    "dashboard": "Dashboard",
-    "login": "Login"
+    "dashboard": "Dashboard"
   },
   "hero": {
     "eyebrow": "Kerala's tailoring shops, all in one place",
@@ -226,13 +225,21 @@
     "uploadPhoto": "Upload Photo",
     "uploading": "Uploading...",
     "uploadFailed": "Upload failed — please try again.",
+    "removeImage": "Remove",
     "statusPending": "Pending Approval",
     "statusRejected": "Rejected",
     "approve": "Approve",
+    "approveAll": "Approve All",
+    "approveAllConfirm": "Approve all {{count}} pending shops? They'll all become publicly visible immediately.",
     "reject": "Reject",
     "pendingApprovalsHeading": "Pending Approvals",
     "allShopsHeading": "All Shops",
-    "dbStorageLabel": "Database Storage (free tier)"
+    "dbStorageLabel": "Database Storage (free tier)",
+    "r2StorageLabel": "Image Storage (R2, free tier)",
+    "storageNotConfigured": "Image uploads aren't configured yet — see docs/CLOUDFLARE_R2_SETUP.md.",
+    "dbLimitReached": "Database storage limit reached (free tier). Delete some data, or upgrade your Supabase plan, before adding more.",
+    "r2LimitReached": "Image storage limit reached (free tier). Delete some images, or upgrade your Cloudflare R2 plan, before uploading more.",
+    "limitReachedBadge": "Limit reached"
   },
   "auth": {
     "registerTitle": "Register Your Shop",

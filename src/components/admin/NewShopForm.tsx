@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { LocalizedText } from "@/types";
 import { createShop } from "@/store/shopsStore";
 import { refreshProfile } from "@/store/authStore";
+import { useDbCapacity } from "@/hooks/useDbCapacity";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -35,6 +36,7 @@ function emptyForm() {
 
 export function NewShopForm({ onCreated }: { onCreated: () => void }) {
   const { t } = useTranslation();
+  const { atLimit: dbAtLimit } = useDbCapacity();
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -203,9 +205,10 @@ export function NewShopForm({ onCreated }: { onCreated: () => void }) {
           onChange={(v) => setForm((f) => ({ ...f, categories: v }))}
         />
 
+        {dbAtLimit && <p className="text-sm text-red-600">{t("admin.dbLimitReached")}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving || dbAtLimit}>
           {saving ? t("admin.saving") : t("admin.addShop")}
         </Button>
       </form>

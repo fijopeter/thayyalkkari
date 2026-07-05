@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import type { ApprovalStatus, NewShopInput, Shop, ShopProduct, ShopService } from "@/types";
 import { supabase } from "@/lib/supabaseClient";
 import { slugify } from "@/lib/slugify";
+import { deleteImage } from "@/lib/imageUpload";
 import {
   newShopToRow,
   productToRow,
@@ -88,7 +89,13 @@ export function useAllProducts(): { product: ShopProduct; shop: Shop }[] {
   return shops.flatMap((shop) => shop.products.map((product) => ({ product, shop })));
 }
 
-/** Creates the caller's shop (owner_id is set server-side from the session). Retries once on a slug clash. */
+/**
+ * Creates the caller's shop (owner_id is set server-side from the session)
+ * and links it back to their profile (profiles.shop_id) so the rest of the
+ * app — the dashboard redirect, the pending-approval screen, the header's
+ * Dashboard button — knows this user owns a shop. Retries once on a slug
+ * clash.
+ */
 export async function createShop(input: NewShopInput): Promise<{ shop?: Shop; error?: string }> {
   const base = slugify(input.slug || input.name) || "shop";
   let slug = base;
@@ -102,10 +109,24 @@ export async function createShop(input: NewShopInput): Promise<{ shop?: Shop; er
 
     if (!error) {
       const shop = rowToShop(data as ShopRow);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("profiles").update({ shop_id: shop.id }).eq("id", user.id);
+      }
+
       await refetchShops();
       return { shop };
     }
     if (error.code === UNIQUE_VIOLATION) {
+      // Two different constraints can raise this code: the slug clash we
+      // retry below, and shops.owner_id's uniqueness (one shop per person),
+      // which retrying can never fix.
+      if (error.message.includes("owner_id")) {
+        return { error: "You already have a shop registered — only one shop is allowed per account." };
+      }
       slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
       continue;
     }
@@ -129,9 +150,17 @@ export async function setShopApproval(id: string, status: ApprovalStatus): Promi
   return updateShop(id, { status });
 }
 
-export async function deleteShop(id: string): Promise<{ error?: string }> {
+/**
+ * `images` — every R2 URL that belonged only to this shop (banner, logo, and
+ * every product's photo). Pass them so they're cleaned up alongside the
+ * rows, which cascade-delete in Postgres but wouldn't otherwise free the
+ * corresponding R2 storage. Best-effort: cleanup failures don't block the
+ * shop deletion, which has already succeeded by that point.
+ */
+export async function deleteShop(id: string, images: string[] = []): Promise<{ error?: string }> {
   const { error } = await supabase.from("shops").delete().eq("id", id);
   if (error) return { error: error.message };
+  await Promise.all(images.filter(Boolean).map((url) => deleteImage(url)));
   await refetchShops();
   return {};
 }
@@ -215,9 +244,14 @@ export async function updateProduct(
   return {};
 }
 
-export async function deleteProduct(_shopId: string, productId: string): Promise<{ error?: string }> {
+export async function deleteProduct(
+  _shopId: string,
+  productId: string,
+  imageUrl?: string,
+): Promise<{ error?: string }> {
   const { error } = await supabase.from("products").delete().eq("id", productId);
   if (error) return { error: error.message };
+  if (imageUrl) await deleteImage(imageUrl);
   await refetchShops();
   return {};
 }

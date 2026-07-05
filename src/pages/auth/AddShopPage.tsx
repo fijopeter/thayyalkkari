@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useSession } from "@/store/authStore";
+import { LogOut } from "lucide-react";
+import { signOut, useSession } from "@/store/authStore";
 import { useShops } from "@/store/shopsStore";
 import { dashboardPathForProfile } from "@/lib/dashboardPath";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Button } from "@/components/ui/Button";
 import { NewShopForm } from "@/components/admin/NewShopForm";
 import { PageLoader } from "@/components/layout/PageLoader";
 
@@ -28,6 +30,12 @@ export function AddShopPage() {
 
   return (
     <Container className="py-12 sm:py-16">
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => signOut()}>
+          <LogOut className="h-4 w-4" />
+          {t("admin.logout")}
+        </Button>
+      </div>
       <SectionHeading
         align="center"
         title={t("auth.addShopTitle")}

@@ -5,6 +5,7 @@ import type { Shop, ShopProduct } from "@/types";
 import { useLang } from "@/hooks/useLang";
 import { t as tl } from "@/lib/utils";
 import { addProduct, deleteProduct, updateProduct } from "@/store/shopsStore";
+import { useDbCapacity } from "@/hooks/useDbCapacity";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -26,10 +27,12 @@ const emptyForm = {
 export function ProductEditor({ shop }: { shop: Shop }) {
   const { t } = useTranslation();
   const { lang } = useLang();
+  const { atLimit: dbAtLimit } = useDbCapacity();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isNew = editingId === "new";
 
   function startAdd() {
     setEditingId("new");
@@ -112,7 +115,7 @@ export function ProductEditor({ shop }: { shop: Shop }) {
                 size="icon"
                 type="button"
                 onClick={async () => {
-                  const result = await deleteProduct(shop.id, product.id);
+                  const result = await deleteProduct(shop.id, product.id, product.image);
                   if (result.error) setError(result.error);
                 }}
               >
@@ -178,9 +181,10 @@ export function ProductEditor({ shop }: { shop: Shop }) {
               />
               {t("admin.enquiryOnlyLabel")}
             </label>
+            {isNew && dbAtLimit && <p className="text-sm text-red-600">{t("admin.dbLimitReached")}</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving || (isNew && dbAtLimit)}>
                 {saving ? t("admin.saving") : t("admin.save")}
               </Button>
               <Button type="button" variant="ghost" onClick={cancel} className="gap-1.5">
@@ -191,10 +195,19 @@ export function ProductEditor({ shop }: { shop: Shop }) {
           </form>
         </Card>
       ) : (
-        <Button type="button" variant="outline" className="gap-1.5" onClick={startAdd}>
-          <Plus className="h-4 w-4" />
-          {t("admin.addProduct")}
-        </Button>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5"
+            disabled={dbAtLimit}
+            onClick={startAdd}
+          >
+            <Plus className="h-4 w-4" />
+            {t("admin.addProduct")}
+          </Button>
+          {dbAtLimit && <p className="mt-2 text-sm text-red-600">{t("admin.dbLimitReached")}</p>}
+        </div>
       )}
     </div>
   );

@@ -74,10 +74,8 @@ anyone could grant themselves platform-wide access). Instead:
 1. Run the app (`npm run dev`) and go to `/register`. Sign up with your own
    email and a password, same as any shop owner would.
 2. This creates a row in `profiles` with `role = 'admin'`, `status =
-   'pending'`. In the Supabase dashboard, go to **Table Editor → profiles**,
-   find your row, and change `role` to `superadmin` and `status` to
-   `approved`. (Or run this in the SQL Editor instead of clicking through the
-   table UI:)
+   'pending'`. Promote it via the **SQL Editor** (not the Table Editor UI —
+   see note below):
    ```sql
    update profiles set role = 'superadmin', status = 'approved'
    where email = 'you@example.com';
@@ -87,6 +85,17 @@ anyone could grant themselves platform-wide access). Instead:
 
 You only need to do this once. From then on, use `/superadmin` to approve
 every real shop owner who registers.
+
+> **Why the SQL Editor specifically, and not Table Editor / the app itself?**
+> A trigger on `profiles` blocks any client from changing `role` or `status`
+> unless they're already a superadmin — otherwise a shop owner could just
+> grant themselves superadmin. The SQL Editor is the one place that connects
+> as the database owner (`postgres`), which the trigger explicitly trusts as
+> a bootstrap path (see the comment above `enforce_profile_guard()` in
+> `supabase/schema.sql`). If you ran an older copy of `schema.sql` before this
+> escape hatch existed and the update silently reverts, re-run the
+> `create or replace function enforce_profile_guard()` block from that file
+> first, then the `update` above.
 
 ## How the approval flow works end to end
 
@@ -120,6 +129,70 @@ every real shop owner who registers.
 - **Role/status changes are guarded by triggers**, not just RLS — even if a
   client sent `{ "status": "approved" }` in an update payload, the trigger
   silently reverts it unless the request came from a superadmin session.
+
+## Free-tier storage lock
+
+Once the database hits Supabase's free-tier limit (500MB), the app blocks
+creating *new* shops/services/products/tracking orders — existing rows can
+still be edited or deleted (to free up space), but inserts are refused. This
+is enforced by a Postgres trigger (`enforce_db_size_limit`, applied to those
+four tables), not just client-side UI, so it can't be bypassed. The
+superadmin dashboard also shows a live "Database Storage" widget with a
+matching "Limit reached" badge once you're there. The equivalent lock for
+image uploads lives in the Cloudflare Worker — see
+[docs/CLOUDFLARE_R2_SETUP.md](CLOUDFLARE_R2_SETUP.md).
+
+If you ran `schema.sql` **before** this feature existed, it won't have these
+triggers yet. Paste this into the SQL Editor once to add them:
+
+```sql
+create or replace function enforce_db_size_limit()
+returns trigger
+language plpgsql
+as $$
+begin
+  if pg_database_size(current_database()) >= 524288000 then
+    raise exception 'Database storage limit reached (free tier). Delete some data, or upgrade your Supabase plan, before adding more.';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger shops_db_size_guard before insert on shops for each row execute function enforce_db_size_limit();
+create trigger services_db_size_guard before insert on services for each row execute function enforce_db_size_limit();
+create trigger products_db_size_guard before insert on products for each row execute function enforce_db_size_limit();
+create trigger tracking_orders_db_size_guard before insert on tracking_orders for each row execute function enforce_db_size_limit();
+```
+
+A fresh run of the current `supabase/schema.sql` already includes this — no
+extra step needed for new projects.
+
+## One shop per person
+
+Each account can own exactly one shop — enforced by a `unique` constraint on
+`shops.owner_id`, not just the app's registration flow. If you ran
+`schema.sql` before this constraint existed, add it with:
+
+```sql
+-- First, check for any duplicates the old (unconstrained) flow may have
+-- created — the alter table below fails if any exist:
+select owner_id, count(*) from shops group by owner_id having count(*) > 1;
+
+-- If that returns rows, delete the extra shop(s) for each owner_id first
+-- (keep whichever one is the real one), then:
+alter table shops add constraint shops_owner_id_unique unique (owner_id);
+```
+
+Also make sure every profile is linked to the shop it owns (a bug in an
+earlier version of `createShop()` skipped this step):
+
+```sql
+update profiles p
+set shop_id = s.id
+from shops s
+where s.owner_id = p.id
+  and p.shop_id is null;
+```
 
 ## Extending the schema
 
