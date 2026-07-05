@@ -25,6 +25,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ServiceCard } from "@/components/shop/ServiceCard";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { ReviewCard } from "@/components/shop/ReviewCard";
+import { ShowcaseMarquee } from "@/components/shop/ShowcaseMarquee";
 import { StitchingRequestForm } from "@/components/shop/StitchingRequestForm";
 
 export function ShopPage() {
@@ -172,6 +173,18 @@ export function ShopPage() {
           ))}
         </div>
       </Container>
+
+      {/* Showcase / Gallery */}
+      {shop.showcaseImages.length > 0 && (
+        <section className="py-10">
+          <Container>
+            <SectionHeading title={t("shopPage.showcaseHeading")} />
+          </Container>
+          <div className="mt-6">
+            <ShowcaseMarquee images={shop.showcaseImages} />
+          </div>
+        </section>
+      )}
 
       {/* Services */}
       <section className="bg-maroon-50/40 py-12">

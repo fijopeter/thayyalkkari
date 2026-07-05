@@ -173,9 +173,12 @@ export function SuperAdminPage() {
   async function handleDeleteShop(shop: Shop) {
     if (!window.confirm(t("admin.deleteShopConfirm", { name: shop.name }))) return;
     setBusyId(shop.id);
-    const images = [shop.bannerImage, shop.logoImage, ...shop.products.map((p) => p.image)].filter(
-      (url): url is string => Boolean(url),
-    );
+    const images = [
+      shop.bannerImage,
+      shop.logoImage,
+      ...shop.products.map((p) => p.image),
+      ...shop.showcaseImages.map((s) => s.image),
+    ].filter((url): url is string => Boolean(url));
     const result = await deleteShop(shop.id, images);
     if (result.error) setActionError(result.error);
     setBusyId(null);

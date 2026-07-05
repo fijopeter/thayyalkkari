@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PageLoader } from "@/components/layout/PageLoader";
 import { ShopProfileForm } from "@/components/admin/ShopProfileForm";
+import { ShowcaseEditor } from "@/components/admin/ShowcaseEditor";
 import { ServiceEditor } from "@/components/admin/ServiceEditor";
 import { ProductEditor } from "@/components/admin/ProductEditor";
 import { OrderEditor } from "@/components/admin/OrderEditor";
 
-type Tab = "profile" | "services" | "products" | "orders";
+type Tab = "profile" | "showcase" | "services" | "products" | "orders";
 
 export function ShopAdminPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -48,6 +49,7 @@ export function ShopAdminPage() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "profile", label: t("admin.shopProfile") },
+    { id: "showcase", label: t("admin.showcase") },
     { id: "services", label: t("admin.services") },
     { id: "products", label: t("admin.products") },
     { id: "orders", label: t("admin.orders") },
@@ -104,6 +106,7 @@ export function ShopAdminPage() {
 
       <div className="mt-6">
         {tab === "profile" && <ShopProfileForm shop={shop} />}
+        {tab === "showcase" && <ShowcaseEditor shop={shop} />}
         {tab === "services" && <ServiceEditor shop={shop} />}
         {tab === "products" && <ProductEditor shop={shop} />}
         {tab === "orders" && <OrderEditor shop={shop} />}

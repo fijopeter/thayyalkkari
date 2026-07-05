@@ -23,7 +23,7 @@ export function Reveal({
 }) {
   return (
     <motion.div
-      className={cn(className)}
+      className={cn("min-w-0", className)}
       custom={index}
       variants={variants}
       initial="hidden"

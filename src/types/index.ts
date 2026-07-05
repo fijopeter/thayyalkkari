@@ -42,6 +42,13 @@ export interface ShopReview {
   comment: LocalizedText;
 }
 
+/** A single photo in a shop's gallery — image only, no title/description/price. */
+export interface ShowcaseImage {
+  id: string;
+  shopId: string;
+  image: string;
+}
+
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
 export interface Shop {
@@ -67,6 +74,7 @@ export interface Shop {
   services: ShopService[];
   products: ShopProduct[];
   reviews: ShopReview[];
+  showcaseImages: ShowcaseImage[];
   workingHours: WorkingHours;
   /** Per-shop toggles for which contact methods show on the public shop page. */
   showCall: boolean;
@@ -85,6 +93,7 @@ export type NewShopInput = Omit<
   | "services"
   | "products"
   | "reviews"
+  | "showcaseImages"
   | "rating"
   | "reviewCount"
   | "status"

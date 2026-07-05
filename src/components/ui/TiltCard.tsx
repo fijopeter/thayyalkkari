@@ -34,7 +34,7 @@ export function TiltCard({ children, className }: { children: ReactNode; classNa
       onMouseEnter={() => scale.set(1.025)}
       onMouseLeave={handleMouseLeave}
       style={{ rotateX, rotateY, scale, transformPerspective: 1000 }}
-      className={cn("will-change-transform hover:shadow-soft-lg", className)}
+      className={cn("min-w-0 will-change-transform hover:shadow-soft-lg", className)}
     >
       {children}
     </motion.div>

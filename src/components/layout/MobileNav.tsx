@@ -41,13 +41,13 @@ export function MobileNav() {
             end={end}
             className={({ isActive }) =>
               cn(
-                "relative z-10 flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium leading-none transition-colors",
+                "relative z-10 flex min-w-0 flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium leading-none transition-colors",
                 isActive ? "text-maroon-700" : "text-ink-700/50",
               )
             }
           >
             <Icon className="h-5 w-5 shrink-0" />
-            <span className="whitespace-nowrap">{label}</span>
+            <span className="w-full truncate text-center">{label}</span>
           </NavLink>
         ))}
       </div>

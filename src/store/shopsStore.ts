@@ -12,7 +12,7 @@ import {
   type ShopRow,
 } from "@/store/mappers";
 
-const SELECT = "*, services(*), products(*), reviews(*)";
+const SELECT = "*, services(*), products(*), reviews(*), showcase_images(*)";
 const UNIQUE_VIOLATION = "23505";
 
 interface ShopsSnapshot {
@@ -250,6 +250,24 @@ export async function deleteProduct(
   imageUrl?: string,
 ): Promise<{ error?: string }> {
   const { error } = await supabase.from("products").delete().eq("id", productId);
+  if (error) return { error: error.message };
+  if (imageUrl) await deleteImage(imageUrl);
+  await refetchShops();
+  return {};
+}
+
+export async function addShowcaseImage(shopId: string, image: string): Promise<{ error?: string }> {
+  const { error } = await supabase.from("showcase_images").insert({ shop_id: shopId, image });
+  if (error) return { error: error.message };
+  await refetchShops();
+  return {};
+}
+
+export async function deleteShowcaseImage(
+  imageId: string,
+  imageUrl?: string,
+): Promise<{ error?: string }> {
+  const { error } = await supabase.from("showcase_images").delete().eq("id", imageId);
   if (error) return { error: error.message };
   if (imageUrl) await deleteImage(imageUrl);
   await refetchShops();

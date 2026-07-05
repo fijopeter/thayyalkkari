@@ -194,6 +194,38 @@ where s.owner_id = p.id
   and p.shop_id is null;
 ```
 
+## Showcase gallery
+
+Each shop can have a simple photo gallery (`showcase_images` — image only, no
+title/description/price) shown as an auto-scrolling strip above Services on
+the public shop page, managed from a "Showcase" tab in the shop's own admin
+dashboard. If you ran `schema.sql` before this table existed, add it with:
+
+```sql
+create table showcase_images (
+  id uuid primary key default uuid_generate_v4(),
+  shop_id uuid not null references shops(id) on delete cascade,
+  image text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table showcase_images enable row level security;
+
+create policy "public reads showcase images of approved shops" on showcase_images for select
+  using (exists (select 1 from shops where shops.id = showcase_images.shop_id and shops.status = 'approved'));
+create policy "owner manages own showcase images" on showcase_images for all
+  using (exists (select 1 from shops where shops.id = showcase_images.shop_id and shops.owner_id = auth.uid()))
+  with check (exists (select 1 from shops where shops.id = showcase_images.shop_id and shops.owner_id = auth.uid()));
+create policy "superadmin manages all showcase images" on showcase_images for all
+  using (is_superadmin()) with check (is_superadmin());
+
+create trigger showcase_images_db_size_guard
+  before insert on showcase_images
+  for each row execute function enforce_db_size_limit();
+```
+
+A fresh run of the current `supabase/schema.sql` already includes this.
+
 ## Extending the schema
 
 Adding a column later (e.g. a new shop field) is a normal Postgres migration:

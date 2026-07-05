@@ -7,6 +7,7 @@ import type {
   ShopProduct,
   ShopReview,
   ShopService,
+  ShowcaseImage,
   TrackingOrder,
 } from "@/types";
 import { buildTimeline, progressFor } from "@/data/trackingOrders";
@@ -48,6 +49,12 @@ export interface ReviewRow {
   comment_ml: string;
 }
 
+export interface ShowcaseImageRow {
+  id: string;
+  shop_id: string;
+  image: string;
+}
+
 export interface ShopRow {
   id: string;
   owner_id: string;
@@ -81,6 +88,7 @@ export interface ShopRow {
   services?: ServiceRow[];
   products?: ProductRow[];
   reviews?: ReviewRow[];
+  showcase_images?: ShowcaseImageRow[];
 }
 
 export interface OrderRow {
@@ -156,6 +164,10 @@ export function rowToReview(row: ReviewRow): ShopReview {
   };
 }
 
+export function rowToShowcaseImage(row: ShowcaseImageRow): ShowcaseImage {
+  return { id: row.id, shopId: row.shop_id, image: row.image };
+}
+
 export function rowToShop(row: ShopRow): Shop {
   return {
     id: row.id,
@@ -185,6 +197,7 @@ export function rowToShop(row: ShopRow): Shop {
     services: (row.services ?? []).map(rowToService),
     products: (row.products ?? []).map(rowToProduct),
     reviews: (row.reviews ?? []).map(rowToReview),
+    showcaseImages: (row.showcase_images ?? []).map(rowToShowcaseImage),
   };
 }
 

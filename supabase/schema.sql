@@ -111,6 +111,18 @@ create table products (
 );
 
 -- ----------------------------------------------------------------------------
+-- showcase_images — a simple photo gallery per shop: image only, no title,
+-- no description, no price. Shown as an auto-scrolling strip above Services
+-- on the public shop page.
+-- ----------------------------------------------------------------------------
+create table showcase_images (
+  id uuid primary key default uuid_generate_v4(),
+  shop_id uuid not null references shops(id) on delete cascade,
+  image text not null,
+  created_at timestamptz not null default now()
+);
+
+-- ----------------------------------------------------------------------------
 -- reviews (seeded/managed by owners; no public write flow in the app yet)
 -- ----------------------------------------------------------------------------
 create table reviews (
@@ -288,6 +300,10 @@ create trigger tracking_orders_db_size_guard
   before insert on tracking_orders
   for each row execute function enforce_db_size_limit();
 
+create trigger showcase_images_db_size_guard
+  before insert on showcase_images
+  for each row execute function enforce_db_size_limit();
+
 -- ----------------------------------------------------------------------------
 -- lookup_tracking_code() — the ONLY way the public /track page reads orders.
 -- tracking_orders has no public SELECT policy (see below), so this is the
@@ -314,6 +330,7 @@ alter table services enable row level security;
 alter table products enable row level security;
 alter table reviews enable row level security;
 alter table tracking_orders enable row level security;
+alter table showcase_images enable row level security;
 
 -- profiles
 create policy "read own profile" on profiles for select
@@ -374,4 +391,13 @@ create policy "owner manages own orders" on tracking_orders for all
   using (exists (select 1 from shops where shops.id = tracking_orders.shop_id and shops.owner_id = auth.uid()))
   with check (exists (select 1 from shops where shops.id = tracking_orders.shop_id and shops.owner_id = auth.uid()));
 create policy "superadmin manages all orders" on tracking_orders for all
+  using (is_superadmin()) with check (is_superadmin());
+
+-- showcase_images
+create policy "public reads showcase images of approved shops" on showcase_images for select
+  using (exists (select 1 from shops where shops.id = showcase_images.shop_id and shops.status = 'approved'));
+create policy "owner manages own showcase images" on showcase_images for all
+  using (exists (select 1 from shops where shops.id = showcase_images.shop_id and shops.owner_id = auth.uid()))
+  with check (exists (select 1 from shops where shops.id = showcase_images.shop_id and shops.owner_id = auth.uid()));
+create policy "superadmin manages all showcase images" on showcase_images for all
   using (is_superadmin()) with check (is_superadmin());
